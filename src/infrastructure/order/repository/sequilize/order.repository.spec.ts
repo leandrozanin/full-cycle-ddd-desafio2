@@ -11,6 +11,7 @@ import ProductRepository from "../../../product/repository/sequelize/product.rep
 import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
 import OrderRepository from "./order.repository";
+import { TransactionSequelize } from "../../../transaction-sequelize";
 
 describe("Order repository test", () => {
   let sequelize: Sequelize;
@@ -38,6 +39,9 @@ describe("Order repository test", () => {
 
   it("should create a new order", async () => {
     const customerRepository = new CustomerRepository();
+    const transaction = new TransactionSequelize(null, sequelize);
+    customerRepository.setTransaction(transaction);
+    
     const customer = new Customer("123", "Customer 1");
     const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer.changeAddress(address);

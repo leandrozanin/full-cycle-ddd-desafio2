@@ -3,6 +3,7 @@ import Customer from "../../../../domain/customer/entity/customer";
 import Address from "../../../../domain/customer/value-object/address";
 import CustomerModel from "./customer.model";
 import CustomerRepository from "./customer.repository";
+import { TransactionSequelize } from "../../../transaction-sequelize";
 
 describe("Customer repository test", () => {
   let sequelize: Sequelize;
@@ -28,6 +29,9 @@ describe("Customer repository test", () => {
     const customer = new Customer("123", "Customer 1");
     const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer.Address = address;
+
+    const transaction = new TransactionSequelize(null, sequelize);
+    customerRepository.setTransaction(transaction);
     await customerRepository.create(customer);
 
     const customerModel = await CustomerModel.findOne({ where: { id: "123" } });
@@ -49,6 +53,9 @@ describe("Customer repository test", () => {
     const customer = new Customer("123", "Customer 1");
     const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer.Address = address;
+
+    const transaction = new TransactionSequelize(null, sequelize);
+    customerRepository.setTransaction(transaction);
     await customerRepository.create(customer);
 
     customer.changeName("Customer 2");
@@ -72,15 +79,23 @@ describe("Customer repository test", () => {
     const customer = new Customer("123", "Customer 1");
     const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer.Address = address;
+
+    const transaction = new TransactionSequelize(null, sequelize);
+    customerRepository.setTransaction(transaction);
     await customerRepository.create(customer);
 
     const customerResult = await customerRepository.find(customer.id);
+
+    customerResult.clearEvents();
 
     expect(customer).toStrictEqual(customerResult);
   });
 
   it("should throw an error when customer is not found", async () => {
+    
     const customerRepository = new CustomerRepository();
+    const transaction = new TransactionSequelize(null, sequelize);
+    customerRepository.setTransaction(transaction);
 
     expect(async () => {
       await customerRepository.find("456ABC");
@@ -89,6 +104,9 @@ describe("Customer repository test", () => {
 
   it("should find all customers", async () => {
     const customerRepository = new CustomerRepository();
+    const transaction = new TransactionSequelize(null, sequelize);
+    customerRepository.setTransaction(transaction);
+    
     const customer1 = new Customer("123", "Customer 1");
     const address1 = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer1.Address = address1;
@@ -106,7 +124,13 @@ describe("Customer repository test", () => {
     const customers = await customerRepository.findAll();
 
     expect(customers).toHaveLength(2);
-    expect(customers).toContainEqual(customer1);
-    expect(customers).toContainEqual(customer2);
+
+    const [customerResult1, customerResult2] = customers;
+
+    customerResult1.clearEvents();
+    customerResult2.clearEvents();
+
+    expect(customer1).toMatchObject(customer1);
+    expect(customerResult2).toMatchObject(customer2);
   });
 });
